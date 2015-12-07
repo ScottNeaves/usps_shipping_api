@@ -1,4 +1,4 @@
-import math, requests, flask, datetime
+import math, requests, flask, datetime, email, smtplib
 from tempfile import NamedTemporaryFile
 from shutil import copyfileobj
 from flask import request, send_file, send_from_directory
@@ -6,6 +6,9 @@ from flask_sqlalchemy import SQLAlchemy
 import xml.etree.ElementTree as ET
 import requests.packages.urllib3
 requests.packages.urllib3.disable_warnings()
+import email.mime.text, email.mime.application
+from email.MIMEMultipart import MIMEMultipart
+#ordoro.shipping.api@gmail.com, password 885ORDOR3254
 
 from flask import Flask
 app = Flask(__name__)
@@ -160,28 +163,30 @@ def get_shipping_label():
     #Endregion Pre-USPS Validation
 
     #Region data transformation
-    fromZip4 = "<FromZip4>"+params['from']['zip4']+"</FromZip4>" if params['from']['zip4'] else "<FromZip4/>"
-    toZip4 = "<ToZip4>"+params['to']['zip4']+"</ToZip4>" if params['to']['zip4'] else "<ToZip4/>"
+    fromZip4 = "<FromZip4>"+params['from']['zip4']+"</FromZip4>" if 'zip4' in params['from'] else "<FromZip4/>"
+    toZip4 = "<ToZip4>"+params['to']['zip4']+"</ToZip4>" if 'zip4' in params['to'] else "<ToZip4/>"
+    toFirm = params['to']['firm'] if 'firm' in params['to'] else ""
+    fromFirm = params['from']['firm'] if 'firm' in params['from'] else ""
     weight = int(params['weight'])*16 #convert pounds to ounces
     #Endregion data transformation
 
     query = """https://secure.shippingapis.com/ShippingAPI.dll?API=DelivConfirmCertifyV4&XML=<?xml version="1.0" encoding="UTF-8" ?>
     <DelivConfirmCertifyV4.0Request USERID="{user_id}">
       <FromName>{from_name}</FromName>
-      <FromFirm>USPS</FromFirm>
+      <FromFirm>{from_firm}</FromFirm>
       <FromAddress1>{from_address1}</FromAddress1>
       <FromAddress2>4{from_address2}</FromAddress2>
       <FromCity>{from_city}</FromCity>
       <FromState>{from_state}</FromState>
       <FromZip5>{from_zip5}</FromZip5>
       {from_zip4}
-      <ToName>Janice Dickens</ToName>
-      <ToFirm>XYZ Corporation</ToFirm>
-      <ToAddress1>Ste 100</ToAddress1>
-      <ToAddress2>2 Massachusetts Ave NE</ToAddress2>
-      <ToCity>Washington</ToCity>
-      <ToState>DC</ToState>
-      <ToZip5>20212</ToZip5>
+      <ToName>{to_name}</ToName>
+      <ToFirm>{to_firm}</ToFirm>
+      <ToAddress1>{to_address1}</ToAddress1>
+      <ToAddress2>{to_address2}</ToAddress2>
+      <ToCity>{to_city}</ToCity>
+      <ToState>{to_state}</ToState>
+      <ToZip5>{to_zip5}</ToZip5>
       {to_zip4}
       <WeightInOunces>{weight}</WeightInOunces>
       <ServiceType>{service_type}</ServiceType>
@@ -190,6 +195,7 @@ def get_shipping_label():
     """.format(\
         user_id=app.config['API_KEY'], \
         from_name=params['from']['name'], \
+        from_firm=fromFirm,
         from_address1=params['from']['address1'], \
         from_address2=params['from']['address2'], \
         from_city=params['from']['city'], \
@@ -197,6 +203,7 @@ def get_shipping_label():
         from_zip5=params['from']['zip5'], \
         from_zip4=fromZip4, \
         to_name=params['to']['name'], \
+        to_firm=toFirm, \
         to_address1=params['to']['address1'], \
         to_address2=params['to']['address2'], \
         to_city=params['to']['city'], \
@@ -207,10 +214,8 @@ def get_shipping_label():
         service_type=params['serviceType'],
         image_format=params['imageFormat']
         )
-    print "QUERY:***********"
     print query
     result_raw = requests.post(query).text
-    print "RESULT:****************"
     print result_raw
     result_xml = ET.fromstring(result_raw)
     
@@ -223,10 +228,40 @@ def get_shipping_label():
     #In a production environment, "yourLabel" would probably be replaced by the customer's name,
     #   and instead of storing the files in the local directory, we might store them on a remote fileserver
     filename="yourLabel"+str(datetime.datetime.now())+"."+params['imageFormat']
-    image_file = open(filename, "wb")
+    image_file = open(filename, "w+b")
     image_file.write(result_xml.find('DeliveryConfirmationLabel').text.decode('base64'))
     image_file.seek(0)
-    return send_from_directory('', filename, as_attachment=True)
+
+    deliveryType = 'Download' #download by default.
+    if 'emailAddress' in params:
+        deliveryType = 'Email'
+        deliveryEmailAddress=params['emailAddress']
+
+    if deliveryType=='Download':
+        return send_from_directory('', filename, as_attachment=True)
+
+    if deliveryType=='Email':
+        try:
+            msg=MIMEMultipart()
+            msg['Subject'] = "Shipping Label"
+            msg['From'] = "Ordoro"
+            msg['To'] = deliveryEmailAddress
+            att = email.mime.application.MIMEApplication(image_file.read(),_subtype=params['imageFormat'])
+            att.add_header('Content-Disposition', 'attachment', filename=filename)
+            msg.attach(att)
+            session = smtplib.SMTP('smtp.gmail.com', 587)
+            session.ehlo()
+            session.starttls()
+            session.ehlo()
+            session.login('ordoro.shipping.api', '885ORDOR3254')
+            session.sendmail('ordoro.shipping.api@gmail.com', deliveryEmailAddress, msg.as_string())
+            result = {'result': 'Shipping label successfully emailed to ' + deliveryEmailAddress}
+            return flask.jsonify(result)
+        except:
+            error = {'error': 'Email not able to be sent. Try again or remove the emailAddress field from the request object to do a direct download instead.'}
+            return flask.jsonify(error)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

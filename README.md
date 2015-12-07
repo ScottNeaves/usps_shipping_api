@@ -1,5 +1,5 @@
 # usps_shipping_api
-Gets shipping rates and shipping labels from USPS, and also does another cool shipping-related thing (specifics TBD)
+Gets shipping rates and shipping labels from USPS. Fun new feature added to the shipping labels API: you can optionally get your labels emailed to you! More on that below.
 
 ##Usage: 
 ###Shipping Rates
@@ -52,37 +52,36 @@ Note: It is assumed that the shipper is a small-to-medium e-commerce business wh
 ```
 ###Label Creation
 
-This shipping label API acts as a wrapper around the USPS shipping label API, allowing you to provide your data in a friendly JSON format instead of XML and also automatically downloading the resulting label as an image instead of base64 code.
+This shipping label API acts as a wrapper around the USPS shipping label API, allowing you to provide your data in a friendly JSON format instead of XML and also automatically downloading the resulting label as an image instead of base64 code. If you supply your email address in the optional "emailAddress" fields, your shipping lable will be emailed to you instead of downloaded!
 
-All fields are required except for "Zip4" and "Firm". 
+All fields are required except for "zip4", "firm", and "emailAddress".
 
 *Example request object*
 
 ```
 {
     "to":{
-        "name": "John Doe",
-        "firm": "XYZ Corp",
-        "address1": "Suite 1400",
-        "address2": "123 Anywhere Street",
-        "state": "Washington",
-        "city": "DC",
-        "zip5": "20212",
-        "Zip4": "",
+        "name": "Ordoro",
+        "firm": "Ordoro",
+        "address1": "Suite 405",
+        "address2": "101 W 6th St",
+        "city": "Austin",
+        "state": "TX",
+        "zip5": "78701"
     },
     "from":{
-        "name": "John Doe",
-        "firm": "ABC Corp",
-        "address1": "Suite 1400",
-        "address2": "123 Anywhere Street",
-        "state": "Washington",
-        "city": "DC",
-        "zip5": "20212",
-        "zip4": "",
+        "name": "Scott Neaves",
+        "address1": "",
+        "address2": "5916 Lomita Verde Circle",
+        "city": "Austin",
+        "state": "TX",
+        "zip5": "78749",
+        "zip4": "4203"
     },
-    "weight": 1,							//unit: pounds 
-    "serviceType": "PRIORITY",				//"PRIORITY", "FIRST CLASS", or "STANDARD POST"
-    "imageFormat": "PDF"					//must be either "TIF" or "PDF"
+    "weight": 70,								//unit: pounds
+    "serviceType": "PRIORITY",					//"PRIORITY", "FIRST CLASS", or "STANDARD POST"
+    "imageFormat": "PDF",						//must be either "TIF" or "PDF"
+    "emailAddress": "your_email_address@gmail.com"
 }
 ```
 
