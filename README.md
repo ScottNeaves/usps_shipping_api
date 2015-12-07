@@ -1,7 +1,9 @@
 # usps_shipping_api
 Gets shipping rates and shipping labels from USPS. Fun new feature added to the shipping labels API: you can optionally get your labels emailed to you! More on that below.
 
-##Usage: 
+To run the project: install the dependencies listed in requirements.txt and run 'python ordoro.py'. Then the API will be live on localhost and you can get all the rates and shipping labels your heart desires :)
+
+##API Usage: 
 ###Shipping Rates
 
 Endpoint: POST /get_shipping_rates
