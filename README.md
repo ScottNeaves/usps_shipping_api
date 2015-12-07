@@ -52,7 +52,7 @@ Note: It is assumed that the shipper is a small-to-medium e-commerce business wh
 ```
 ###Label Creation
 
-This shipping label API acts as a wrapper around the USPS shipping label API, allowing you to provide your data in a friendly JSON format instead of XML and also automatically downloading the resulting label as an image instead of base64 code. If you supply your email address in the optional "emailAddress" fields, your shipping lable will be emailed to you instead of downloaded!
+This shipping label API acts as a wrapper around the USPS shipping label API, allowing you to provide your data in a friendly JSON format instead of XML and also automatically downloading the resulting label as an image instead of base64 code. If you supply your email address in the optional "emailAddress" fields, your shipping label will be emailed to you instead of downloaded!
 
 All fields are required except for "zip4", "firm", and "emailAddress".
 
@@ -85,4 +85,4 @@ All fields are required except for "zip4", "firm", and "emailAddress".
 }
 ```
 
-The response will be the resulting image file, in either TIF or PDF format, whichever you specified in the request.
+The response will be either the image file (if you don't supply an email address) or a status message informing you whether or not the email containing your shipping label was successfully sent.
