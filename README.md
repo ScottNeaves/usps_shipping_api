@@ -3,6 +3,9 @@ Gets shipping rates and shipping labels from USPS. Fun new feature added to the 
 
 ##Usage: 
 ###Shipping Rates
+
+Endpoint: POST /get_shipping_rates
+
 The shipping rates API is intended to provide e-commerce shippers with prices for each USPS shipping option available for the package they wish to ship, so that they may choose which USPS delivery option best suits their price and urgency requirements.
 
 To get shipping rates, POST the following json object as raw data to /get_shipping_rates with Content-type='application/json'. All fields are required except for "irregular_shape", which is a boolean and should be set to true whenever you are shipping something in a particularly unusual container. Of course, the value associated with each key in the JSON object below is meant as an example, and should be replaced with whatever value is relevant to the package you wish to ship.
@@ -51,6 +54,8 @@ Note: It is assumed that the shipper is a small-to-medium e-commerce business wh
 }
 ```
 ###Label Creation
+
+Endpoint: POST /get_shipping_label
 
 This shipping label API acts as a wrapper around the USPS shipping label API, allowing you to provide your data in a friendly JSON format instead of XML and also automatically downloading the resulting label as an image instead of base64 code. If you supply your email address in the optional "emailAddress" fields, your shipping label will be emailed to you instead of downloaded!
 
